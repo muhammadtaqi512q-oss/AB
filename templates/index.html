@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Ira AI</title>
+    <style>
+        body { background: #0a0e17; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 50px; }
+        .container { background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; width: 400px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 215, 0, 0.3); }
+        input, textarea { width: 100%; margin-bottom: 10px; background: #1a202c; border: 1px solid #4a5568; color: white; padding: 10px; border-radius: 5px; }
+        button { background: #d4af37; border: none; padding: 10px 20px; color: black; font-weight: bold; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
 <body>
-    <h2>AI Collaborator</h2>
-    <input type="text" id="prompt" placeholder="Enter prompt...">
-    <button onclick="askAI()">Send</button>
-    <pre id="result"></pre>
-    <button onclick="copyResult()">Copy Response</button>
-
+    <div class="container">
+        <h2>Ira AI</h2>
+        <textarea id="msg" placeholder="Message..."></textarea>
+        <button onclick="send()">Send</button>
+        <div id="res" style="margin-top: 20px; color: #d4af37;"></div>
+    </div>
     <script>
-        async function askAI() {
-            let p = document.getElementById('prompt').value;
-            let res = await fetch('/api/ask', {
+        async function send() {
+            const msg = document.getElementById('msg').value;
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({prompt: p})
+                body: JSON.stringify({message: msg})
             });
-            let data = await res.json();
-            document.getElementById('result').innerText = data.response;
-        }
-
-        function copyResult() {
-            let text = document.getElementById('result').innerText;
-            navigator.clipboard.writeText(text);
-            alert("Copied to clipboard!");
+            const data = await res.json();
+            document.getElementById('res').innerText = data.response;
         }
     </script>
 </body>

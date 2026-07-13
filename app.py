@@ -1,39 +1,33 @@
-from flask import Flask, render_template, request, jsonify
-import sqlite3
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from llama_cpp import Llama
+import uvicorn
 
-app = Flask(__name__)
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
-def init_db():
-    conn = sqlite3.connect('chat.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS messages (user TEXT, text TEXT)''')
-    conn.commit()
-    conn.close()
+# Model Load (Ensure path is correct)
+# TinyLlama-1.1B Q4_K_M is approx 600MB, for <200MB 
+# use Q2_K or smaller models if strictly limited.
+llm = Llama(model_path="model/model.gguf", n_ctx=512)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.route('/send', methods=['POST'])
-def send():
-    user = request.form.get('username')
-    msg = request.form.get('message')
-    conn = sqlite3.connect('chat.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO messages VALUES (?, ?)", (user, msg))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+@app.post("/api/ask")
+async def ask_ai(data: dict):
+    prompt = data.get("prompt", "")
+    output = llm(f"USER: {prompt} ASSISTANT:", max_tokens=128)
+    response = output["choices"][0]["text"]
+    return {"response": response}
 
-@app.route('/get')
-def get():
-    conn = sqlite3.connect('chat.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM messages")
-    data = [{"user": row[0], "text": row[1]} for row in c.fetchall()]
-    conn.close()
-    return jsonify(data)
+# Copy function for API integration
+def copy_to_clipboard(text):
+    import pyperclip
+    pyperclip.copy(text)
+    return True
 
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

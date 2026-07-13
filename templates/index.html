@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #e5ddd5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #box { width: 350px; height: 500px; background: white; overflow-y: scroll; padding: 10px; border-radius: 10px; }
+        .msg { background: #dcf8c6; margin: 5px; padding: 8px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div id="login">
+        <input id="user" placeholder="Enter Name">
+        <button onclick="start()">Login</button>
+    </div>
+    <div id="chat" style="display:none;">
+        <div id="box"></div>
+        <input id="msg" placeholder="Message">
+        <button onclick="send()">Send</button>
+    </div>
+
+    <script>
+        let name = "";
+        function start() { name = document.getElementById('user').value; document.getElementById('login').style.display='none'; document.getElementById('chat').style.display='block'; }
+        
+        async function send() {
+            let m = document.getElementById('msg').value;
+            await fetch('/send', { method: 'POST', body: new URLSearchParams({username: name, message: m}), headers: {'Content-Type': 'application/x-www-form-urlencoded'} });
+            document.getElementById('msg').value = '';
+        }
+
+        async function load() {
+            let res = await fetch('/get');
+            let data = await res.json();
+            document.getElementById('box').innerHTML = data.map(i => `<div class="msg"><b>${i.user}:</b> ${i.text}</div>`).join('');
+        }
+        setInterval(load, 1000);
+    </script>
+</body>
+</html>

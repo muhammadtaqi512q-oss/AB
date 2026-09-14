@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Generator & Downloader</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    h2 { margin-top: 0; color: #38bdf8; text-align: center; font-size: 1.5rem; }
+    .input-group { margin-bottom: 1.2rem; }
+    label { display: block; margin-bottom: 0.5rem; color: #cbd5e1; font-size: 0.9rem; }
+    input[type="text"] { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 1rem; outline: none; }
+    input[type="text"]:focus { border-color: #38bdf8; }
+    button { width: 100%; padding: 0.75rem; border-radius: 6px; border: none; background: #0284c7; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #0369a1; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    #resultBox { margin-top: 1.5rem; display: none; }
+    .video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; border: 1px solid #334155; }
+    iframe { width: 100%; height: 100%; border: none; }
+    .title-text { font-size: 0.95rem; font-weight: 600; color: #e2e8f0; margin-bottom: 10px; }
+    .btn-download { display: block; width: 100%; text-align: center; padding: 0.8rem; background: #16a34a; color: white; font-weight: bold; border-radius: 6px; text-decoration: none; font-size: 1rem; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }
+    .btn-download:hover { background: #15803d; }
+    .status { text-align: center; color: #38bdf8; margin: 10px 0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>AI Video Generator</h2>
+
+  <div class="input-group">
+    <label for="promptInput">Enter Video Prompt:</label>
+    <input type="text" id="promptInput" value="banana dance" placeholder="e.g. banana dance">
+  </div>
+
+  <button id="genBtn" onclick="searchAndGenerate()">Generate Video</button>
+
+  <div id="status" class="status"></div>
+
+  <div id="resultBox">
+    <div class="title-text" id="videoTitle"></div>
+    <div class="video-container">
+      <iframe id="videoPlayer" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <a id="downloadBtn" href="#" target="_blank" class="btn-download">Download via SSYouTube</a>
+  </div>
+</div>
+
+<script>
+  async function searchAndGenerate() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    if (!prompt) return alert('Karam karke prompt enter karein!');
+
+    const status = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const btn = document.getElementById('genBtn');
+    const player = document.getElementById('videoPlayer');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const videoTitle = document.getElementById('videoTitle');
+
+    btn.disabled = true;
+    status.innerText = 'Searching video... Please wait';
+    resultBox.style.display = 'none';
+
+    try {
+      // Multiple open public endpoint instances for high uptime
+      const endpoints = [
+        'https://pipedapi.kavin.rocks',
+        'https://api.piped.private.coffee',
+        'https://pipedapi.mha.fi'
+      ];
+
+      let videoData = null;
+
+      for (let api of endpoints) {
+        try {
+          const res = await fetch(`${api}/search?q=${encodeURIComponent(prompt)}&filter=all`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.items && data.items.length > 0) {
+              // Find first video item
+              videoData = data.items.find(item => item.type === 'stream');
+              if (videoData) break;
+            }
+          }
+        } catch (e) {
+          console.log(`Endpoint ${api} failed, trying next...`);
+        }
+      }
+
+      if (videoData) {
+        // Extract video ID (e.g. /watch?v=XXXX -> XXXX)
+        const videoId = videoData.url.split('v=')[1];
+        
+        videoTitle.innerText = videoData.title;
+        player.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+        downloadBtn.href = `https://www.ssyoutube.com/watch?v=${videoId}`;
+
+        status.innerText = '';
+        resultBox.style.display = 'block';
+      } else {
+        // Fallback option if search API completely fails
+        const encoded = encodeURIComponent(prompt);
+        videoTitle.innerText = `Result for: "${prompt}"`;
+        player.src = `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}`;
+        downloadBtn.href = `https://ssyoutube.com/results?search_query=${encoded}`;
+        
+        status.innerText = '';
+        resultBox.style.display = 'block';
+      }
+    } catch (err) {
+      status.innerText = 'Error loading video. Try again.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>

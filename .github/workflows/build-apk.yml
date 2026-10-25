@@ -29,13 +29,15 @@ jobs:
           npm install -g cordova
           
           # 1. Create Cordova project
-          cordova create app com.taqi.ec "EAGLE CRAFT"
+          cordova create app com.game.taqi "EAGLE CRAFT"
           
-          # 2. Copy ALL files and folders to www folder (excluding git and the app build folder itself)
-          find . -maxdepth 1 ! -name '.' ! -name 'app' ! -name '.git' ! -name '.github' -exec cp -r {} app/www/ \;
+          # 2. Copy ALL HTML and web files to www folder
+          cp -r *.html *.png *.jpg *.jpeg *.css *.js app/www/ 2>/dev/null || true
+          # cp -r css js images app/www/ 2>/dev/null || true
           
           # 3. Add Custom Icon to Config if icon.png exists
-          if [ -f "app/www/icon.png" ]; then
+          if [ -f "icon.png" ]; then
+            cp icon.png app/www/icon.png
             sed -i '/<\/widget>/i \    <icon src="www/icon.png" />' app/config.xml
           fi
           
